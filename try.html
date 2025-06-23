@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>民宿永續旅遊成熟度評估</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for Radar Chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
@@ -143,6 +145,164 @@
             text-decoration: none;
             cursor: pointer;
         }
+
+        /* Message Box styles */
+        .message-box {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1001; /* Higher than modal */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .message-box-content {
+            background-color: #fefefe;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .message-box-content h3 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .message-box-content p {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .message-box-content button {
+            background-color: #27AE60;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .message-box-content button:hover {
+            background-color: #229954;
+        }
+
+
+        /* Print Styles */
+        @media print {
+            /* Hide the navigation bar */
+            nav {
+                display: none !important;
+            }
+
+            /* Hide the assessment form section */
+            #assessmentSection {
+                display: none !important;
+            }
+
+            /* Hide the Inn Name input field and its label */
+            #innNameInput, label[for="innNameInput"] {
+                display: none !important;
+            }
+
+            /* Hide calculation and print buttons */
+            #calculateBtn, #printBtn, #exportBtn, #loadBtn { /* Added #loadBtn */
+                display: none !important;
+            }
+
+            /* Hide modals */
+            .modal, .message-box { /* Added .message-box */
+                display: none !important;
+            }
+
+            /* Ensure results section is visible and takes full width for printing */
+            #resultsSection {
+                display: block !important;
+                visibility: visible !important;
+                position: relative !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background-color: transparent !important; /* No background on print */
+            }
+
+            /* Adjust main content wrapper for print */
+            body > .max-w-6xl.w-full { /* Target the main content div that wraps everything */
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background-color: transparent !important;
+                width: 100% !important;
+                max-width: none !important;
+            }
+
+            /* Reset body padding set for fixed nav */
+            body {
+                padding-top: 0 !important;
+                background-color: #fff !important; /* White background for print */
+            }
+
+            /* Hide the introduction paragraph for printing */
+            #introductionText {
+                display: none !important;
+            }
+
+            /* Force background colors of progress bars to print */
+            #overallMaturityBar,
+            #categoryTableBody .h-4.rounded-full {
+                -webkit-print-color-adjust: exact !important; /* For Chrome/Safari */
+                print-color-adjust: exact !important; /* Standard property */
+            }
+
+            /* Show print title */
+            #printTitle {
+                display: block !important;
+                text-align: center;
+                font-size: 2em; /* Larger font size for title */
+                font-weight: bold;
+                margin-bottom: 20px; /* Space below title */
+                color: #2D3748; /* A darker grey for text */
+            }
+
+            /* Explicitly set flex properties for print to ensure two columns */
+            #printSummaryContainer {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: flex-start !important;
+                justify-content: center !important;
+                gap: 20px !important; /* Adjust gap for print */
+                margin-bottom: 20px !important; /* Space below summary */
+            }
+
+            #printSummaryContainer > div:first-child { /* Left column: text info */
+                width: 50% !important;
+                flex: none !important; /* Don't allow it to grow/shrink */
+                padding: 0 10px !important; /* Add some internal padding */
+            }
+
+            #printSummaryContainer > div:last-child { /* Right column: radar chart */
+                width: 50% !important;
+                flex: none !important; /* Don't allow it to grow/shrink */
+                display: flex !important; /* Ensure canvas is centered within its div */
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 0 10px !important; /* Add some internal padding */
+            }
+
+            #maturityRadarChart {
+                width: 100% !important; /* Make radar chart take full width of its print container */
+                height: auto !important; /* Maintain aspect ratio */
+                max-width: 300px; /* Limit chart size for better print layout */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center">
@@ -157,6 +317,10 @@
                 <button id="helpBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out">
                     使用說明
                 </button>
+                <!-- New Load Result Button -->
+                <button id="loadBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out">
+                    讀取
+                </button>
                 <button id="globalSetScoreBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out text-2xl">
                     &#128274; <!-- Unicode for lock emoji -->
                 </button>
@@ -170,11 +334,29 @@
             <div class="w-full max-w-xl bg-gray-400 rounded-full h-2">
                 <div id="progressBar" class="bg-green-500 h-2 rounded-full progress-bar" style="width: 0%;"></div>
             </div>
+            <!-- New Quick Guide Section -->
+            <div class="w-full max-w-xl mt-4 text-white text-xs px-2 flex justify-between flex-wrap">
+                <div class="flex items-center mb-1 sm:mb-0">
+                    <span class="font-semibold mr-1">行動/記錄:</span>
+                    <span>0 尚未開始</span>
+                    <span class="mx-1">&harr;</span>
+                    <span>4 完全達成</span>
+                </div>
+                <div class="flex items-center">
+                    <span class="font-semibold mr-1">持續時間:</span>
+                    <span>0 尚未進行</span>
+                    <span class="ml-2">1 &le;1年</span>
+                    <span class="ml-2">2 &le;2年</span>
+                    <span class="ml-2">3 &le;3年</span>
+                    <span class="ml-2">4 >3年</span>
+                </div>
+            </div>
         </div>
     </nav>
 
     <div class="max-w-6xl w-full bg-white shadow-xl rounded-lg p-8 mt-10 mb-10"> <!-- Adjusted mt-10 for content clearance -->
-        <p class="text-lg text-gray-700 text-center mb-6">請針對以下各項指標，根據您的民宿實際情況選擇「行動」、「行動持續時間」、「記錄」及「記錄持續時間」的分數 (0-4)。指標的最終分數將取四者之最小值。</p>
+        <!-- Added id="introductionText" to this paragraph -->
+        <p id="introductionText" class="text-lg text-gray-700 text-center mb-6">評估人員對受評單位之回覆，就其行動與記錄，以及兩者的持續時間，依設計之給分範圍 0 至 4 分，個別進行評分。</p>
 
         <div id="assessmentSection">
             <!-- Category A: 永續管理 -->
@@ -190,7 +372,7 @@
                         
                         <!-- Column 2: Action & Action Duration (25% overall width on desktop) -->
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -200,7 +382,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -212,9 +394,12 @@
                             </div>
                         </div>
 
+                        <!-- Vertical Separator Line -->
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
+
                         <!-- Column 3: Record & Record Duration (25% overall width on desktop) -->
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -224,7 +409,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -242,7 +427,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者定期彙整其永續旅遊之政策、行動與績效等，並主動揭露給顧客、供應商及社區居民等利害關係人。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -252,7 +437,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -263,8 +448,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -274,7 +460,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -292,7 +478,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者提供遊客周邊的自然資源、當地文化習俗及遺產之資訊與解說，以及應當遵守的行為規範。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -302,7 +488,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -313,8 +499,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -324,7 +511,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -342,7 +529,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者能持續彙整分析顧客滿意度，並依顧客回饋意見執行適合的改善計畫。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-4" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-4" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -352,7 +539,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-4" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-4" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -363,8 +550,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-4" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-4" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -374,7 +562,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-4" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-4" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -392,7 +580,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者能透過教育訓練或其他方式，讓自身及員工了解民宿的永續規劃及行動方案。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-5" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-5" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -402,7 +590,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-5" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-5" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -413,8 +601,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-5" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-5" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -424,7 +613,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-5" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-5" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -442,7 +631,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者應主動辨認營運區域各項天然性災害風險，研擬因應計畫，並持續對民宿建築、設施、設備等進行日常檢修以提供安全環境。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-6" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-6" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -452,7 +641,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-6" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-6" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -463,8 +652,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-6" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-6" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -474,7 +664,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-6" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-6" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -492,7 +682,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者應積極參與及支持目的地之永續規劃、管理與推動，並與利害關係人共同合作。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-7" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-7" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -502,7 +692,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-7" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-7" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -513,8 +703,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="A-7" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="A-7" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -524,7 +715,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="A-7" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="A-7" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -549,7 +740,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者優先採購具有環境友善認證或在地生產的產品與服務。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="B-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="B-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -559,7 +750,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="B-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="B-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -570,8 +761,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="B-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="B-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -581,7 +773,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="B-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="B-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -599,7 +791,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者推動源頭減量，減少資源消耗和廢棄物產生。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="B-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="B-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -609,7 +801,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="B-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="B-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -620,8 +812,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="B-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="B-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -631,7 +824,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="B-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="B-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -649,7 +842,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否紀錄和監測採購物品的永續性資訊？</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="B-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="B-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -659,7 +852,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="B-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="B-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -670,8 +863,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="B-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="B-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -681,7 +875,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="B-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="B-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -706,7 +900,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者提供產品服務、策略合作或採購時，優先支持具有在地特色、品質與環境友善之店家。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="C-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="C-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -716,7 +910,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="C-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="C-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -727,8 +921,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="C-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="C-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -738,7 +933,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="C-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="C-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -756,7 +951,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者支援當地社區發展所需之相關資源，並提供設施與服務讓社區使用。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="C-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="C-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -766,7 +961,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="C-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="C-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -777,8 +972,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="C-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="C-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -788,7 +984,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="C-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="C-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -806,7 +1002,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者之營運活動，應考慮其對當地社區原有公共服務設施的排擠與負面影響。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="C-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="C-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -816,7 +1012,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="C-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="C-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -827,8 +1023,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="C-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="C-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -838,7 +1035,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="C-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="C-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -863,7 +1060,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者在聘用員工時，應給予當地居民平等機會，同時不因其性別、種族、宗教或其他因素，影響其獲得錄用的機會。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="D-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="D-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -873,7 +1070,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="D-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="D-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -884,8 +1081,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="D-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="D-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -895,7 +1093,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="D-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="D-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -913,7 +1111,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者除提供合乎法規的薪資外，能依其工作條件給予合理的報酬；此外，重視員工的權利並提供安全的工作環境，同時對員工個別提供適當的在職培訓。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="D-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="D-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -923,7 +1121,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="D-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="D-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -934,8 +1132,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="D-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="D-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -945,7 +1144,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="D-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="D-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -963,7 +1162,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者抵制任何剝削與騷擾行為（尤其對兒童、青少年、婦女及弱勢團體），並能提出相關措施與執行。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="D-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="D-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -973,7 +1172,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="D-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="D-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -984,8 +1183,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="D-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="D-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -995,7 +1195,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="D-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="D-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1020,7 +1220,7 @@
                             <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者應對當地之有形與無形、傳統與當代文化資產或習俗盡可能進行了解。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="E-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="E-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1030,7 +1230,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="E-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="E-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1041,8 +1241,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="E-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="E-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1052,7 +1253,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="E-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="E-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1067,10 +1268,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">E2 文化呈現</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者將當地傳統及(或)當代地方文化元素，以設計或表演藝術等形式呈現予遊客。</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者將當地傳統及(或)當代地方文化元素融入營運活動中。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="E-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="E-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1080,7 +1281,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="E-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="E-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1091,8 +1292,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="E-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="E-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1102,7 +1304,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="E-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="E-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1117,10 +1319,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">E3 文化參與</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者提供機會讓遊客參與當地文化體驗活動。</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者紀錄對文化保護所做的貢獻(如捐贈、參與保育行動等)，並向顧客推廣文化保存理念及宣導應遵守之當地文化相關規範。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="E-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="E-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1130,7 +1332,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="E-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="E-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1141,8 +1343,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="E-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="E-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1152,7 +1355,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="E-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="E-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1174,10 +1377,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">F1 有害物質</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者避免使用有害物質，並妥善管理化學品、廢油等。</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者於營運活動中，減少對環境有害物質之使用 (例如農藥、塗料、消毒劑、清潔材料等)。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="F-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="F-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1187,7 +1390,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="F-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="F-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1198,8 +1401,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="F-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="F-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1209,7 +1413,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="F-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="F-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1224,10 +1428,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">F2 減少污染</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者採取措施減少空氣、噪音和光污染。</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者於營運活動中所產生之噪音、光、水、空氣等污染，能採取適當措施以減少對環境的影響。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="F-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="F-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1237,7 +1441,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="F-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="F-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1248,8 +1452,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="F-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="F-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1259,7 +1464,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="F-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="F-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1281,10 +1486,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">G1 節水設備與措施</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否使用節水設備或採取節水措施？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者採用有效的設備與措施減少耗水總量，持續進行紀錄與監測，並對員工和顧客進行節水宣導。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="G-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="G-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1294,7 +1499,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="G-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="G-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1305,8 +1510,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="G-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="G-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1316,7 +1522,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="G-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="G-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1331,10 +1537,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">G2 廢污水處理</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否妥善處理廢污水，避免污染環境？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者能以有效措施再利用廢污水，並以安全及合乎規範的方式排放廢水。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="G-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="G-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1344,7 +1550,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="G-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="G-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1355,8 +1561,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="G-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="G-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1366,7 +1573,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="G-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="G-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1388,10 +1595,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">H1 廢棄物紀錄與監測</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否紀錄和監測廢棄物產生量和種類？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者對其廢棄物 (含廚餘)進行分類並紀錄。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="H-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="H-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1401,7 +1608,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="H-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="H-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1412,8 +1619,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="H-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="H-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1423,7 +1631,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="H-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="H-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1438,10 +1646,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">H2 廢棄物減量機制</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否實施廢棄物減量、回收和再利用機制？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者依據廢棄物之分類統計紀錄，研擬廢棄物的減量措施。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="H-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="H-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1451,7 +1659,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="H-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="H-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1462,8 +1670,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="H-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="H-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1473,7 +1682,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="H-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="H-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1495,10 +1704,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">I1 節能設備與措施</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否使用節能設備或採取節能措施？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者使用符合節能的設備並研擬相關措施，以減少能源使用量。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1508,7 +1717,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1519,8 +1728,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1530,7 +1740,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1545,10 +1755,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">I2 交通運輸</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否鼓勵遊客使用大眾運輸或環保交通方式？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者設法減少各種交通運輸的需求(如推動大眾運輸或共乘)，並鼓勵顧客、員工、供應商等使用乾淨能源或節省能源的運輸工具。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1558,7 +1768,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1569,8 +1779,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1580,7 +1791,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1595,10 +1806,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">I3 溫室氣體減排</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否制定並執行溫室氣體減排目標和計畫？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者研擬減量措施，以逐步達成淨零排放目標，包含溫室氣體及碳足跡盤查。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1608,7 +1819,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1619,8 +1830,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1630,7 +1842,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1645,10 +1857,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">I4 紀錄與監測</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否紀錄和監測能源消耗和溫室氣體排放量？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者於本準則各項指標均有清楚的紀錄及持續監測之文件。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-4" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-4" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1658,7 +1870,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-4" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-4" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1669,8 +1881,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="I-4" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="I-4" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1680,7 +1893,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="I-4" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="I-4" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1702,10 +1915,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">J1 保護生物多樣性</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者避免對當地生物多樣性造成負面影響。</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者設法以參與或贊助等方式支持生物多樣性保育，並盡可能減少對自然生態系統的干擾，同時採取行動鼓勵顧客支持。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="J-1" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="J-1" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1715,7 +1928,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="J-1" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="J-1" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1726,8 +1939,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="J-1" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="J-1" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1737,7 +1951,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="J-1" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="J-1" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1752,10 +1966,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">J2 優先使用本土物種</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者在綠化或景觀設計上是否優先使用本土物種？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者優先使用本地原生物種進行空間與環境綠化。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="J-2" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="J-2" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1765,7 +1979,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="J-2" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="J-2" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1776,8 +1990,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="J-2" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="J-2" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1787,7 +2002,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="J-2" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="J-2" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1802,10 +2017,10 @@
                     <div class="indicator-card bg-gray-50 p-4 rounded-lg shadow-sm flex flex-col md:flex-row md:items-stretch justify-between">
                         <div class="w-full md:w-1/2 md:pr-4 flex-shrink-0">
                             <p class="text-lg font-bold text-gray-700 mb-1">J3 推廣自然景觀景點</p>
-                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者是否推廣負責任的自然景觀景點旅遊？</p>
+                            <p class="text-lg font-medium text-gray-700 mb-2 md:mb-0">民宿經營者瞭解鄰近的自然景點，並向顧客宣導應遵守之相關規範。</p>
                         </div>
                         <div class="flex flex-col w-full md:w-1/4 md:px-2 flex-shrink-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="J-3" data-type="action">
+                            <div class="flex flex-col items-start pb-4" data-indicator="J-3" data-type="action">
                                 <span class="font-semibold text-gray-600">行動:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1815,7 +2030,7 @@
                                     <button class="score-btn" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="J-3" data-type="actionDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="J-3" data-type="actionDuration">
                                 <span class="font-semibold text-gray-600">行動持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn" data-score="0">0</button>
@@ -1826,8 +2041,9 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="hidden md:block w-px bg-gray-300 mx-2 self-stretch"></div>
                         <div class="flex flex-col w-full md:w-1/4 md:pl-2 flex-shrink-0 mt-4 md:mt-0">
-                            <div class="flex flex-col items-start pb-4 mb-4 border-b border-gray-300" data-indicator="J-3" data-type="record">
+                            <div class="flex flex-col items-start pb-4" data-indicator="J-3" data-type="record">
                                 <span class="font-semibold text-gray-600">記錄:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1837,7 +2053,7 @@
                                     <button class="score-btn score-btn-round" data-score="4">4</button>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-start" data-indicator="J-3" data-type="recordDuration">
+                            <div class="flex flex-col items-start pt-4" data-indicator="J-3" data-type="recordDuration">
                                 <span class="font-semibold text-gray-600">記錄持續時間:</span>
                                 <div class="flex space-x-1">
                                     <button class="score-btn score-btn-round" data-score="0">0</button>
@@ -1853,54 +2069,75 @@
             </div>
         </div>
 
+        <!-- New input field for Inn Name -->
+        <div class="mt-8 mb-4">
+            <label for="innNameInput" class="block text-lg font-semibold text-gray-700 mb-2">請輸入民宿名稱：</label>
+            <input type="text" id="innNameInput" value="民宿" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+        </div>
+
         <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button id="calculateBtn" class="bg-green-700 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-green-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
-                計算永續成熟度
+                計算結果
             </button>
         </div>
 
         <div id="resultsSection" class="mt-12 p-8 bg-green-50 rounded-lg shadow-lg hidden">
-            <h2 class="text-3xl font-bold text-center text-green-800 mb-8">評估結果</h2>
+            <!-- Print Title (Hidden by default, shown only on print) -->
+            <h1 id="printTitle" class="hidden">民宿永續旅遊成熟度評估</h1>
 
-            <div class="bg-white p-6 rounded-lg shadow-md mb-10">
-                <h3 class="text-xl font-bold text-center text-gray-800 mb-6">總體永續成熟度</h3>
-                <div class="text-center mb-6">
-                    <div class="text-lg font-medium text-gray-600 mb-2">總體成熟度等級</div>
-                    <div class="text-4xl font-bold text-green-700">
-                        <span id="overallMaturityLevel"></span> (<span id="overallMaturityScore"></span>分)
+            <!-- Displayed Inn Name -->
+            <h2 id="displayedInnName" class="text-4xl font-bold text-center text-green-800 mb-4"></h2>
+            
+            <h3 class="text-2xl font-bold text-center text-gray-800 mb-6">總體永續旅遊成熟度</h3>
+
+            <!-- Modified div for print layout control -->
+            <div id="printSummaryContainer" class="flex flex-col md:flex-row md:items-start md:justify-center gap-8 mb-6">
+                <!-- Left Column (Flexible width) -->
+                <div class="w-full md:flex-1">
+                    <div class="text-center mb-6">
+                        <div class="text-lg font-medium text-gray-600 mb-2">總體成熟度等級</div>
+                        <div class="text-4xl font-bold text-green-700">
+                            <span id="overallMaturityLevel"></span> (<span id="overallMaturityScore"></span>分)
+                        </div>
+                        <div id="overallMaturityDescription" class="mt-2 text-center text-gray-700"></div>
                     </div>
-                    <div id="overallMaturityDescription" class="mt-2 text-center text-gray-700"></div>
                 </div>
-                
-                <div class="relative w-full bg-gray-100 rounded-full h-4 mb-2">
-                    <div id="overallMaturityBar" class="h-4 rounded-full" style="width: 0%;"></div>
-                    <!-- Tick marks for 1, 2, 3 -->
-                    <div class="absolute h-6 w-0.5 bg-gray-400" style="left: 25%; top: -2px; transform: translateX(-50%);"></div>
-                    <div class="absolute h-6 w-0.5 bg-gray-400" style="left: 50%; top: -2px; transform: translateX(-50%);"></div>
-                    <div class="absolute h-6 w-0.5 bg-gray-400" style="left: 75%; top: -2px; transform: translateX(-50%);"></div>
-                </div>
-                <div class="relative w-full h-auto mt-2">
-                    <span class="absolute text-xs text-gray-500" style="left: 0%; transform: translateX(-0%); white-space: nowrap;">0分</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 12.5%; transform: translateX(-50%); white-space: nowrap;">基礎</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 25%; transform: translateX(-50%); white-space: nowrap;">1分</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 37.5%; transform: translateX(-50%); white-space: nowrap;">發展</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 50%; transform: translateX(-50%); white-space: nowrap;">2分</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 62.5%; transform: translateX(-50%); white-space: nowrap;">整合</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 75%; transform: translateX(-50%); white-space: nowrap;">3分</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 87.5%; transform: translateX(-50%); white-space: nowrap;">模範</span>
-                    <span class="absolute text-xs text-gray-500" style="left: 100%; transform: translateX(-100%); white-space: nowrap;">4分</span>
+
+                <!-- Right Column (Fixed width for Radar Chart) -->
+                <div class="w-full md:w-80 md:flex-none flex items-center justify-center">
+                    <canvas id="maturityRadarChart" class="w-full"></canvas>
                 </div>
             </div>
             
-            <div class="mb-10">
+            <!-- Overall Maturity Progress Bar (Full width, below the two columns) -->
+            <div class="relative w-full bg-gray-100 rounded-full h-4 mb-2">
+                <div id="overallMaturityBar" class="h-4 rounded-full" style="width: 0%;"></div>
+                <!-- Tick marks for 1, 2, 3 -->
+                <div class="absolute h-6 w-0.5 bg-gray-400" style="left: 25%; top: -2px; transform: translateX(-50%);"></div>
+                <div class="absolute h-6 w-0.5 bg-gray-400" style="left: 50%; top: -2px; transform: translateX(-50%);"></div>
+                <div class="absolute h-6 w-0.5 bg-gray-400" style="left: 75%; top: -2px; transform: translateX(-50%);"></div>
+            </div>
+            <div class="relative w-full h-auto mt-2">
+                <span class="absolute text-xs text-gray-500" style="left: 0%; transform: translateX(-0%); white-space: nowrap;">0分</span>
+                <span class="absolute text-xs text-gray-500" style="left: 12.5%; transform: translateX(-50%); white-space: nowrap;">基礎</span>
+                <span class="absolute text-xs text-gray-500" style="left: 25%; transform: translateX(-50%); white-space: nowrap;">1分</span>
+                <span class="absolute text-xs text-gray-500" style="left: 37.5%; transform: translateX(-50%); white-space: nowrap;">發展</span>
+                <span class="absolute text-xs text-gray-500" style="left: 50%; transform: translateX(-50%); white-space: nowrap;">2分</span>
+                <span class="absolute text-xs text-gray-500" style="left: 62.5%; transform: translateX(-50%); white-space: nowrap;">整合</span>
+                <span class="absolute text-xs text-gray-500" style="left: 75%; transform: translateX(-50%); white-space: nowrap;">3分</span>
+                <span class="absolute text-xs text-gray-500" style="left: 87.5%; transform: translateX(-50%); white-space: nowrap;">模範</span>
+                <span class="absolute text-xs text-gray-500" style="left: 100%; transform: translateX(-100%); white-space: nowrap;">4分</span>
+            </div>
+            
+            <div class="mb-10 mt-10">
                 <h3 class="text-xl font-bold text-center text-gray-800 mb-6">各面向成熟度</h3>
                 <div id="categoryChartsContainer" class="w-full">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-gray-200">
-                                <th class="p-3 border text-gray-700 font-semibold">面向</th>
-                                <th class="p-3 border text-gray-700 font-semibold">得分</th>
-                                <th class="p-3 border text-gray-700 font-semibold">表現</th>
+                                <th class="p-3 border text-gray-700 font-semibold" style="width: 30%;">面向</th>
+                                <th class="p-3 border text-gray-700 font-semibold" style="width: 20%;">得分</th>
+                                <th class="p-3 border text-gray-700 font-semibold" style="width: 50%;">表現</th>
                             </tr>
                         </thead>
                         <tbody id="categoryTableBody">
@@ -1910,6 +2147,27 @@
                 </div>
             </div>
         </div>
+
+        <!-- New input field for Inn Name -->
+        <div class="mt-8 mb-4">
+            <label for="innNameInput" class="block text-lg font-semibold text-gray-700 mb-2">請輸入民宿名稱：</label>
+            <input type="text" id="innNameInput" value="民宿" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+        </div>
+
+        <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button id="calculateBtn" class="bg-green-700 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-green-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                計算結果
+            </button>
+        </div>
+
+        <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button id="printBtn" class="bg-green-700 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-green-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                列印結果
+            </button>
+            <button id="exportBtn" class="bg-blue-600 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-blue-500 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
+                輸出結果
+            </button>
+        </div>
     </div>
 
     <!-- Help Modal -->
@@ -1918,41 +2176,34 @@
             <span class="close-button" id="closeHelpModalBtn">&times;</span>
             <h2 class="text-2xl font-bold text-gray-800 mb-4">使用說明</h2>
             <p class="text-gray-700 mb-4">歡迎使用民宿永續旅遊成熟度評估工具！</p>
-            <p class="text-gray-700 mb-4">請針對以下各項指標，根據您的民宿實際情況選擇「行動」、「行動持續時間」、「記錄」及「記錄持續時間」四個部分的分數：</p>
+            <p class="text-gray-700 mb-4">評估人員對受評單位之回覆，就其行動與記錄，以及兩者的持續時間，依設計之給分範圍 0 至 4 分，個別進行評分。</p>
+            
             <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">行動：民宿執行該項指標之相關行動之達成程度。</h3>
             <ul class="list-disc list-inside text-gray-700 mb-4 pl-4">
-                <li>**0分 尚未開始**：尚未執行任何行動</li>
-                <li>**1分 低度達成**：已依營運需求或政策要求，執行一項或多項行動</li>
-                <li>**2分 中度達成**：已依營運需求或政策要求，經評估後執行多項行動</li>
-                <li>**3分 高度達成**：已對各可行之方法進行評估且將利害關係人意見納入，執行部分行動</li>
-                <li>**4分 充份達成**：已盡可能評估並考量各利害關係人的意見，執行所有可行之行動</li>
-            </ul>
-            <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">行動持續時間：民宿執行該項指標之相關行動的持續時間與頻率。</h3>
-            <ul class="list-disc list-inside text-gray-700 mb-4 pl-4">
-                <li>**0分 尚未開始**：尚未執行任何行動</li>
-                <li>**1分 不持續/低頻率**：偶爾執行，無固定頻率或持續性</li>
-                <li>**2分 部分持續/中頻率**：有固定頻率執行，但非長期持續</li>
-                <li>**3分 大部分持續/高頻率**：持續性高，且頻率穩定</li>
-                <li>**4分 完全持續/非常高頻率**：已全面整合至日常營運，持續且頻率高</li>
+                <li>0分 尚未開始：尚未執行任何行動</li>
+                <li>1分 低度達成：已依營運需求或政策要求，執行一項或多項行動</li>
+                <li>2分 中度達成：已依營運需求或政策要求，經評估後執行多項行動</li>
+                <li>3分 高度達成：已對各可行之方法進行評估且將利害關係人意見納入，執行部分行動</li>
+                <li>4分 充份達成：已盡可能評估並考量各利害關係人的意見，執行所有可行之行動</li>
             </ul>
             <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">記錄：民宿針對該項指標進行系統化記錄的程度。</h3>
             <ul class="list-disc list-inside text-gray-700 mb-4 pl-4">
-                <li>**0分 尚未開始**：尚未有進行記錄</li>
-                <li>**1分 低度達成**：整理紙本文件並輔以手寫文字進行記錄</li>
-                <li>**2分 中度達成**：已運用電子化方式進行文字與照片之記錄 (如LINE)</li>
-                <li>**3分 高度達成**：除運用電子化方式進行記錄，亦運用試算表工具進行彙整</li>
-                <li>**4分 充份達成**：已導入企業資源規劃(ERP) 進行記錄及彙整</li>
+                <li>0分 尚未開始：尚未有進行記錄</li>
+                <li>1分 低度達成：整理紙本文件並輔以手寫文字進行記錄</li>
+                <li>2分 中度達成：已運用電子化方式進行文字與照片之記錄 (如LINE)</li>
+                <li>3分 高度達成：除運用電子化方式進行記錄，亦運用試算表工具進行彙整</li>
+                <li>4分 充份達成：已導入企業資源規劃(ERP) 進行記錄及彙整</li>
             </ul>
-            <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">記錄持續時間：民宿針對該項指標進行記錄的持續時間與頻率。</h3>
+            <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">持續時間：民宿針對該項指標之「行動」或「記錄」所進行之持續時間。</h3>
             <ul class="list-disc list-inside text-gray-700 mb-4 pl-4">
-                <li>**0分 尚未開始**：尚未有進行記錄</li>
-                <li>**1分 不持續/低頻率**：偶爾進行記錄，無固定頻率或持續性</li>
-                <li>**2分 部分持續/中頻率**：有固定頻率進行記錄，但非長期持續</li>
-                <li>**3分 大部分持續/高頻率**：記錄持續性高，且頻率穩定</li>
-                <li>**4分 完全持續/非常高頻率**：記錄已全面整合至日常營運，持續且頻率高</li>
+                <li>0分：尚未進行</li>
+                <li>1分：1 年(含)以下</li>
+                <li>2分：2年(含)以下</li>
+                <li>3分：3年(含)以下</li>
+                <li>4分：3年以上</li>
             </ul>
             <p class="text-gray-700 mb-4">每個指標的最終分數將取「行動」、「行動持續時間」、「記錄」及「記錄持續時間」四個部分分數的最小值。</p>
-            <p class="text-gray-700 mb-4">完成所有指標評估後，點擊「計算永續成熟度」按鈕，即可查看您的民宿在各面向和總體上的永續成熟度等級。</p>
+            <p class="text-gray-700 mb-4">完成所有指標評估後，點擊「計算結果」按鈕，即可查看您的民宿在各面向和總體上的永續成熟度等級。</p>
             <p class="text-gray-700 mb-4">您也可以隨時點擊「重設評估」按鈕，重新開始評估。</p>
         </div>
     </div>
@@ -1979,7 +2230,47 @@
         </div>
     </div>
 
+    <!-- Export Result Modal (New) -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeExportModalBtn">&times;</span>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">複製評估結果編碼</h2>
+            <p class="text-gray-700 mb-4">以下是您民宿的永續旅遊成熟度評估編碼字串，您可以點擊按鈕複製：</p>
+            <textarea id="exportOutputTextarea" rows="6" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm font-mono text-sm resize-none" readonly></textarea>
+            <button id="copyExportTextBtn" class="mt-4 w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-150 ease-in-out">
+                複製字串
+            </button>
+        </div>
+    </div>
+
+    <!-- Load Result Modal (New) -->
+    <div id="loadModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeLoadModalBtn">&times;</span>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">貼上評估結果編碼</h2>
+            <p class="text-gray-700 mb-4">請將您的評估結果編碼字串貼到下方文本框中，然後點擊「確定」：</p>
+            <textarea id="loadInputTextarea" rows="6" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm font-mono text-sm resize-none"></textarea>
+            <button id="confirmLoadBtn" class="mt-4 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-150 ease-in-out">
+                確定
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Message Box -->
+    <div id="messageBox" class="message-box">
+        <div class="message-box-content">
+            <h3 id="messageBoxTitle"></h3>
+            <p id="messageBoxBody"></p>
+            <button id="closeMessageBoxBtn">確定</button>
+        </div>
+    </div>
+
+
     <script>
+        // Declare a variable for the Chart instance outside the DOMContentLoaded
+        // so it can be destroyed and recreated.
+        let maturityRadarChart; 
+
         document.addEventListener('DOMContentLoaded', () => {
             const scoreButtons = document.querySelectorAll('.score-btn');
             const progressText = document.getElementById('progressText');
@@ -1987,12 +2278,15 @@
             const calculateBtn = document.getElementById('calculateBtn');
             const resetBtn = document.getElementById('resetBtn');
             const helpBtn = document.getElementById('helpBtn');
+            const loadBtn = document.getElementById('loadBtn'); // New load button
             const globalSetScoreBtn = document.getElementById('globalSetScoreBtn');
             const resultsSection = document.getElementById('resultsSection');
             const overallMaturityLevel = document.getElementById('overallMaturityLevel');
             const overallMaturityScore = document.getElementById('overallMaturityScore'); 
             const overallMaturityDescription = document.getElementById('overallMaturityDescription');
             const overallMaturityBar = document.getElementById('overallMaturityBar');
+            const printBtn = document.getElementById('printBtn'); 
+            const exportBtn = document.getElementById('exportBtn'); 
             
             const helpModal = document.getElementById('helpModal');
             const closeHelpModalBtn = document.getElementById('closeHelpModalBtn');
@@ -2000,9 +2294,30 @@
             const scoreSetModal = document.getElementById('scoreSetModal');
             const closeScoreSetModalBtn = document.getElementById('closeScoreSetModalBtn');
 
+            const exportModal = document.getElementById('exportModal'); 
+            const closeExportModalBtn = document.getElementById('closeExportModalBtn'); 
+            const exportOutputTextarea = document.getElementById('exportOutputTextarea'); 
+            const copyExportTextBtn = document.getElementById('copyExportTextBtn'); 
+
+            const loadModal = document.getElementById('loadModal'); // New load modal
+            const closeLoadModalBtn = document.getElementById('closeLoadModalBtn'); // Close button for load modal
+            const loadInputTextarea = document.getElementById('loadInputTextarea'); // Textarea for load input
+            const confirmLoadBtn = document.getElementById('confirmLoadBtn'); // Confirm button for load modal
+
+            const messageBox = document.getElementById('messageBox'); // Custom message box
+            const messageBoxTitle = document.getElementById('messageBoxTitle');
+            const messageBoxBody = document.getElementById('messageBoxBody');
+            const closeMessageBoxBtn = document.getElementById('closeMessageBoxBtn');
+
+
             const globalScoreSetBtns = scoreSetModal.querySelectorAll('.global-score-set-btn');
 
             const categoryTableBody = document.getElementById('categoryTableBody');
+            const maturityRadarChartCanvas = document.getElementById('maturityRadarChart');
+
+            // New elements
+            const innNameInput = document.getElementById('innNameInput');
+            const displayedInnName = document.getElementById('displayedInnName');
 
 
             // Define categories and their corresponding indicator prefixes and display names
@@ -2021,7 +2336,24 @@
             const categoryKeys = Object.keys(categories);
 
             // Store selected scores for each indicator: { 'A-1': { action: score, actionDuration: score, record: score, recordDuration: score }, ... }
-            const selectedScores = {};
+            const selectedScores = {}; // This object will store the scores for each indicator
+
+            // Initialize selectedScores with undefined for all expected indicators and score types
+            function initializeScores() {
+                for (const categoryKey in categories) {
+                    for (let i = 1; i <= categories[categoryKey].indicators; i++) {
+                        const indicatorId = `${categoryKey}-${i}`;
+                        selectedScores[indicatorId] = {
+                            action: undefined,
+                            actionDuration: undefined,
+                            record: undefined,
+                            recordDuration: undefined
+                        };
+                    }
+                }
+            }
+            initializeScores();
+
 
             // Total number of indicators (each has four sub-scores, but we count the indicator as complete if all four are filled)
             const totalIndicators = Object.values(categories).reduce((sum, cat) => sum + cat.indicators, 0);
@@ -2043,20 +2375,51 @@
                 4: '#27AE60'  // Green for 模範
             };
 
+            // Score to character mapping for export
+            const scoreToCharMap = {
+                0: 'R',
+                1: 'M',
+                2: 'N',
+                3: 'O',
+                4: 'P'
+            };
+
+            // Character to score mapping for import (reverse of scoreToCharMap)
+            const charToScoreMap = {
+                'R': 0,
+                'M': 1,
+                'N': 2,
+                'O': 3,
+                'P': 4
+            };
+
 
             // Function to get maturity level description based on average score
             function getMaturityInfo(average) {
                 if (average >= 0 && average <= 1) { 
-                    return { level: '基礎', description: '民宿處於開始參與永續旅遊的階段。\n民宿主要著重於基本意識，可能僅依循最基本規範。\n民宿相關永續方案與措施與多為臨時性，尚未系統性地整合到日常營運與管理中。\n民宿開始對部分永續旅遊相關表現進行紀錄與監測。', color: maturityColors['基礎'] };
+                    return { level: '基礎', description: '民宿處於開始參與永續旅遊的階段。<br>民宿主要著重於基本意識，可能僅依循最基本規範。<br>民宿相關永續方案與措施與多為臨時性，尚未系統性地整合到日常營運與管理中。<br>民宿開始對部分永續旅遊相關表現進行紀錄與監測。', color: maturityColors['基礎'] };
                 } else if (average > 1 && average <= 2) {
-                    return { level: '發展', description: '民宿已持續參與永續旅遊，其宿表現已超越基本規範，並正採取更具目標性的行動。\n民宿已實施多項永續旅遊相關實踐並取得顯著進展。\n永續旅遊可能尚未全面融入所有營運環節。\n民宿已經持續對永續旅遊相關表現進行紀錄與監測。', color: maturityColors['發展'] };
+                    return { level: '發展', description: '民宿已持續參與永續旅遊，其宿表現已超越基本規範，並正採取更具目標性的行動。<br>民宿已實施多項永續旅遊相關實踐並取得顯著進展。<br>永續旅遊可能尚未全面融入所有營運環節。<br>民宿已經持續對永續旅遊相關表現進行紀錄與監測。', color: maturityColors['發展'] };
                 } else if (average > 2 && average <= 3) {
-                    return { level: '整合', description: '永續旅遊已穩定且持續地融入民宿營運的各個關鍵面向。\n民宿採用更系統化的管理方法，並建立了相關政策和程序。\n民宿已經持續對永續旅遊相關表現進行紀錄與監測，並將利害關係人為意見整合用以進行持續改善。\n以持續改進為目標，但可能在創新或更廣泛的影響方面仍有提升空間。', color: maturityColors['整合'] };
+                    return { level: '整合', description: '永續旅遊已穩定且持續地融入民宿營運的各個關鍵面向。<br>民宿採用更系統化的管理方法，並建立了相關政策和程序。<br>民宿已經持續對永續旅遊相關表現進行紀錄與監測，並將利害關係人為意見整合用以進行持續改善。<br>以持續改進為目標，但可能在創新或更廣泛的影響方面仍有提升空間。', color: maturityColors['整合'] };
                 } else if (average > 3 && average <= 4) {
-                    return { level: '模範', description: '民宿展現出全面且卓越的永續旅遊表現。\n永續承諾已深入其經營理念、日常營運和體驗中。\n持續追求超越預期，並為全面性永續旅遊做出積極貢獻，成為其他民宿的標竿。', color: maturityColors['模範'] };
+                    return { level: '模範', description: '民宿展現出全面且卓越的永續旅遊表現。<br>永續承諾已深入其經營理念、日常營運和體驗中。<br>持續追求超越預期，並為全面性永續旅遊做出積極貢獻，成為其他民宿的標竿。', color: maturityColors['模範'] };
                 }
                 return { level: '未評估', description: '', color: '#BDBDBD' }; // Fallback, should not be reached with 0-4 scores, using a grey color
             }
+
+            // Function to show custom message box
+            function showMessageBox(title, message) {
+                messageBoxTitle.textContent = title;
+                messageBoxBody.textContent = message;
+                messageBox.style.display = 'flex';
+            }
+
+            // Function to hide custom message box
+            closeMessageBoxBtn.addEventListener('click', () => {
+                messageBox.style.display = 'none';
+            });
+
 
             // Update progress bar and text
             function updateProgress() {
@@ -2078,15 +2441,74 @@
                 const progressWidth = (completedCount / totalIndicators) * 100;
                 progressBar.style.width = `${progressWidth}%`;
 
-                // CalculateBtn should be enabled if all indicators are answered
-                if (completedCount === totalIndicators) {
+                // CalculateBtn and ExportBtn should be enabled if all indicators are answered
+                const isAllIndicatorsCompleted = (completedCount === totalIndicators);
+
+                if (isAllIndicatorsCompleted) {
                     calculateBtn.disabled = false;
                     calculateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
                     calculateBtn.disabled = true;
                     calculateBtn.classList.add('opacity-50', 'cursor-not-allowed');
                 }
+                
+                // Print and Export buttons should only be enabled when results section is visible (i.e., after calculation)
+                const isResultsVisible = !resultsSection.classList.contains('hidden');
+
+                if (isResultsVisible) {
+                    printBtn.disabled = false;
+                    printBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    exportBtn.disabled = false;
+                    exportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    printBtn.disabled = true;
+                    printBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    exportBtn.disabled = true;
+                    exportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
             }
+
+            // Function to visually update score buttons based on selectedScores
+            function updateScoreButtonsUI() {
+                scoreButtons.forEach(button => {
+                    button.classList.remove('selected');
+                    button.style.backgroundColor = '#f3f4f6'; // gray-100
+                    button.style.borderColor = '#d1d5db'; // gray-300
+                });
+
+                for (const categoryKey in categories) {
+                    for (let i = 1; i <= categories[categoryKey].indicators; i++) {
+                        const indicatorId = `${categoryKey}-${i}`;
+                        const scores = selectedScores[indicatorId];
+                        
+                        if (scores) {
+                            // Find the container for this indicator
+                            const indicatorContainer = document.querySelector(`[data-indicator="${indicatorId}"]`);
+                            if (indicatorContainer) {
+                                // Iterate through each score type for this indicator
+                                const scoreTypes = ['action', 'actionDuration', 'record', 'recordDuration'];
+                                scoreTypes.forEach(type => {
+                                    if (scores[type] !== undefined) {
+                                        const scoreValue = scores[type];
+                                        const scoreTypeDiv = indicatorContainer.querySelector(`[data-type="${type}"]`);
+                                        if (scoreTypeDiv) {
+                                            const selectedButton = scoreTypeDiv.querySelector(`button[data-score="${scoreValue}"]`);
+                                            if (selectedButton) {
+                                                selectedButton.classList.add('selected');
+                                                selectedButton.style.backgroundColor = scoreButtonSelectedColors[scoreValue];
+                                                selectedButton.style.borderColor = scoreButtonSelectedColors[scoreValue];
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                updateProgress();
+                resultsSection.classList.add('hidden'); // Hide results when scores are changed
+            }
+
 
             // Handle score button click for individual indicators
             scoreButtons.forEach(button => {
@@ -2178,39 +2600,165 @@
                 });
             });
 
+            // Function to render the radar chart
+            function renderRadarChart(categoryAverages) {
+                if (maturityRadarChart) {
+                    maturityRadarChart.destroy(); // Destroy previous chart instance if exists
+                }
+
+                const labels = categoryKeys; // A, B, C, ... J
+                const data = labels.map(key => categoryAverages[key] !== undefined ? categoryAverages[key] : 0);
+
+                const ctx = maturityRadarChartCanvas.getContext('2d');
+                maturityRadarChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '平均成熟度分數',
+                            data: data,
+                            backgroundColor: 'rgba(39, 174, 96, 0.4)', // Semi-transparent green
+                            borderColor: 'rgba(39, 174, 96, 1)', // Solid green
+                            pointBackgroundColor: 'rgba(39, 174, 96, 1)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(39, 174, 96, 1)',
+                            borderWidth: 2,
+                            fill: true, // Fill the area under the radar data
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true, // Maintain aspect ratio within the smaller container
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    color: 'rgba(209, 213, 219, 0.8)' // Light grey for angle lines
+                                },
+                                grid: {
+                                    color: 'rgba(209, 213, 219, 0.8)' // Light grey for grid lines
+                                },
+                                pointLabels: {
+                                    font: {
+                                        size: 14,
+                                        family: 'Noto Sans TC' // Ensure Noto Sans TC is used
+                                    },
+                                    color: '#4A5568' // Darker grey for labels
+                                },
+                                // Set min and max for the radar chart
+                                min: 0,
+                                max: 4,
+                                ticks: {
+                                    display: false, // Hide the numbers on the scale
+                                    stepSize: 1, // Ensure steps at 0, 1, 2, 3, 4
+                                },
+                                // Configure scale properties to show lines but hide labels
+                                beginAtZero: true
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false // Hide dataset label
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.r !== null) {
+                                            label += context.parsed.r.toFixed(2) + '分';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        elements: {
+                            line: {
+                                tension: 0.1 // Slight curve to the line
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Function to generate the encoded string
+            function generateEncodedString() {
+                let encodedString = "";
+                for (const categoryKey of categoryKeys) {
+                    for (let i = 1; i <= categories[categoryKey].indicators; i++) {
+                        const indicatorId = `${categoryKey}-${i}`;
+                        const scores = selectedScores[indicatorId];
+                        
+                        // Default to 0 (R) if any score is undefined
+                        const actionChar = scoreToCharMap[scores.action] || 'R';
+                        const actionDurationChar = scoreToCharMap[scores.actionDuration] || 'R';
+                        const recordChar = scoreToCharMap[scores.record] || 'R';
+                        const recordDurationChar = scoreToCharMap[scores.recordDuration] || 'R';
+
+                        encodedString += actionChar + actionDurationChar + recordChar + recordDurationChar;
+                    }
+                }
+                return encodedString;
+            }
+
+            // Function to decode the string and update selectedScores
+            function decodeAndApplyScores(encodedString) {
+                // First, reset all scores
+                initializeScores();
+
+                let charIndex = 0;
+                for (const categoryKey of categoryKeys) {
+                    for (let i = 1; i <= categories[categoryKey].indicators; i++) {
+                        const indicatorId = `${categoryKey}-${i}`;
+                        
+                        const actionChar = encodedString[charIndex++];
+                        const actionDurationChar = encodedString[charIndex++];
+                        const recordChar = encodedString[charIndex++];
+                        const recordDurationChar = encodedString[charIndex++];
+
+                        selectedScores[indicatorId].action = charToScoreMap[actionChar];
+                        selectedScores[indicatorId].actionDuration = charToScoreMap[actionDurationChar];
+                        selectedScores[indicatorId].record = charToScoreMap[recordChar];
+                        selectedScores[indicatorId].recordDuration = charToScoreMap[recordDurationChar];
+                    }
+                }
+                // Update UI after decoding
+                updateScoreButtonsUI();
+            }
 
             // Calculate Sustainable Maturity
             calculateBtn.addEventListener('click', () => {
+                // Get the inn name and display it
+                const innName = innNameInput.value.trim();
+                displayedInnName.textContent = innName || '民宿'; // Default to "民宿" if empty
+
                 const categoryFinalScores = {}; // To store the MIN score for each indicator
                 for (const key in categories) {
                     categoryFinalScores[key] = [];
                 }
 
                 // Calculate the final score for each indicator (min of action, actionDuration, record, and recordDuration)
-                for (const indicatorId in selectedScores) {
-                    const actionScore = selectedScores[indicatorId].action;
-                    const actionDurationScore = selectedScores[indicatorId].actionDuration;
-                    const recordScore = selectedScores[indicatorId].record;
-                    const recordDurationScore = selectedScores[indicatorId].recordDuration;
+                for (const categoryKey in categories) {
+                    for (let i = 1; i <= categories[categoryKey].indicators; i++) {
+                        const indicatorId = `${categoryKey}-${i}`;
+                        const scores = selectedScores[indicatorId]; // Get the object for this indicator
 
-                    // Ensure all four scores are present before calculating min
-                    if (actionScore !== undefined && actionDurationScore !== undefined && 
-                        recordScore !== undefined && recordDurationScore !== undefined) {
-                        
-                        const finalIndicatorScore = Math.min(actionScore, actionDurationScore, recordScore, recordDurationScore);
-                        const prefix = indicatorId.split('-')[0]; // Get the category letter (e.g., 'A', 'B')
-                        if (categoryFinalScores[prefix]) {
-                            categoryFinalScores[prefix].push(finalIndicatorScore);
-                        }
-                    } else {
-                        // If any sub-score is missing for an indicator, treat its final score as 0 for calculation
-                        // This prevents errors if calculateBtn is manually enabled or if data is incomplete
-                        const prefix = indicatorId.split('-')[0];
-                        if (categoryFinalScores[prefix]) {
-                            categoryFinalScores[prefix].push(0); // Pushing 0 or NaN depending on desired behavior
+                        // Ensure all four sub-scores are present before calculating min
+                        if (scores.action !== undefined && scores.actionDuration !== undefined && 
+                            scores.record !== undefined && scores.recordDuration !== undefined) {
+                            
+                            const finalIndicatorScore = Math.min(scores.action, scores.actionDuration, scores.record, scores.recordDuration);
+                            categoryFinalScores[categoryKey].push(finalIndicatorScore);
+                        } else {
+                            // If any sub-score is missing for an indicator, treat its final score as 0 for calculation
+                            categoryFinalScores[categoryKey].push(0); // Pushing 0 for incomplete indicators
                         }
                     }
                 }
+
 
                 const categoryAverages = {};
                 const allEvaluatedCategoryAvgs = [];
@@ -2238,7 +2786,7 @@
                 // Update Overall Maturity Display
                 overallMaturityLevel.textContent = overallInfo.level;
                 overallMaturityScore.textContent = overallAvg.toFixed(2); // Display overall score
-                overallMaturityDescription.innerHTML = overallInfo.description.replace(/\n/g, '<br>'); // Use innerHTML to respect newlines
+                overallMaturityDescription.innerHTML = overallInfo.description; // Use innerHTML to respect newlines
                 overallMaturityLevel.style.color = overallInfo.color; // Set color for overall level text
                 overallMaturityBar.style.backgroundColor = overallInfo.color; // Set color for overall progress bar
                 
@@ -2260,18 +2808,21 @@
                     // 面向 (Category Name) Cell
                     const categoryNameCell = document.createElement('td');
                     categoryNameCell.classList.add('p-3', 'border', 'text-gray-700', 'font-medium');
+                    categoryNameCell.style.width = '30%'; // Set width
                     categoryNameCell.textContent = `${key}. ${categories[key].name}`;
                     row.appendChild(categoryNameCell);
 
                     // 得分 (Score) Cell
                     const scoreCell = document.createElement('td');
                     scoreCell.classList.add('p-3', 'border', 'text-gray-700');
+                    scoreCell.style.width = '20%'; // Set width
                     scoreCell.innerHTML = `<span class="font-bold" style="color: ${info.color}">${info.level}</span> (${avg.toFixed(2)}分)`;
                     row.appendChild(scoreCell);
 
                     // 表現 (Performance Bar) Cell
                     const performanceBarCell = document.createElement('td');
                     performanceBarCell.classList.add('p-3', 'border');
+                    performanceBarCell.style.width = '50%'; // Set width
 
                     const barContainer = document.createElement('div');
                     barContainer.classList.add('relative', 'w-full', 'bg-gray-100', 'rounded-full', 'h-4', 'mb-2'); // Added mb-2 for spacing
@@ -2324,16 +2875,18 @@
                     categoryTableBody.appendChild(row);
                 }
 
+                // Render the radar chart
+                renderRadarChart(categoryAverages);
+
                 resultsSection.classList.remove('hidden');
                 resultsSection.scrollIntoView({ behavior: 'smooth' });
+                updateProgress(); // Re-run to enable print and export buttons
             });
 
             // Reset Assessment (this button performs a full reset, including global buttons)
             resetBtn.addEventListener('click', () => {
                 // Clear selected scores
-                for (const key in selectedScores) {
-                    delete selectedScores[key];
-                }
+                initializeScores();
 
                 // Remove 'selected' class from all buttons and reset their colors
                 scoreButtons.forEach(button => {
@@ -2341,6 +2894,11 @@
                     button.style.backgroundColor = '#f3f4f6'; // gray-100
                     button.style.borderColor = '#d1d5db'; // gray-300
                 });
+
+                // Reset inn name input and display
+                innNameInput.value = '民宿';
+                displayedInnName.textContent = '';
+
 
                 // Reset progress
                 updateProgress(); // This will disable calculateBtn and reset progress bar/text
@@ -2357,6 +2915,12 @@
 
                 // Clear category charts and levels (now in table)
                 categoryTableBody.innerHTML = '';
+
+                // Destroy radar chart if it exists
+                if (maturityRadarChart) {
+                    maturityRadarChart.destroy();
+                    maturityRadarChart = null; // Clear the reference
+                }
             });
 
             // Help button and Modal
@@ -2377,6 +2941,68 @@
                 scoreSetModal.style.display = 'none'; // Hide the new score set modal
             });
 
+            // Export button click
+            exportBtn.addEventListener('click', () => {
+                const encodedString = generateEncodedString();
+                exportOutputTextarea.value = encodedString;
+                exportModal.style.display = 'flex'; // Show the export modal
+            });
+
+            // Close export modal button
+            closeExportModalBtn.addEventListener('click', () => {
+                exportModal.style.display = 'none'; // Hide the export modal
+            });
+
+            // Copy to clipboard button inside export modal
+            copyExportTextBtn.addEventListener('click', () => {
+                exportOutputTextarea.select(); // Select the text
+                document.execCommand('copy'); // Copy the selected text
+                // Optionally provide user feedback that text has been copied
+                copyExportTextBtn.textContent = '已複製！';
+                setTimeout(() => {
+                    copyExportTextBtn.textContent = '複製字串'; // Reset button text
+                }, 2000);
+            });
+
+            // Load button click (New)
+            loadBtn.addEventListener('click', () => {
+                loadInputTextarea.value = ''; // Clear previous input
+                loadModal.style.display = 'flex'; // Show the load modal
+            });
+
+            // Close load modal button (New)
+            closeLoadModalBtn.addEventListener('click', () => {
+                loadModal.style.display = 'none'; // Hide the load modal
+            });
+
+            // Confirm load button inside load modal (New)
+            confirmLoadBtn.addEventListener('click', () => {
+                const inputString = loadInputTextarea.value.trim();
+                const expectedLength = totalIndicators * 4; // 32 indicators * 4 scores/indicator = 128
+
+                // Validate string length
+                if (inputString.length !== expectedLength) {
+                    showMessageBox('讀取失敗', '讀取失敗'); // Simplified error message
+                    return;
+                }
+
+                // Validate characters
+                const validChars = Object.keys(charToScoreMap); // ['R', 'M', 'N', 'O', 'P']
+                for (let i = 0; i < inputString.length; i++) {
+                    const char = inputString[i];
+                    if (!validChars.includes(char)) {
+                        showMessageBox('讀取失敗', '讀取失敗'); // Simplified error message
+                        return;
+                    }
+                }
+
+                // If valid, decode and apply scores
+                decodeAndApplyScores(inputString);
+                loadModal.style.display = 'none'; // Close the load modal
+                showMessageBox('讀取成功', '評分已成功載入！');
+            });
+
+
             // Close modal when clicking outside of it
             window.addEventListener('click', (event) => {
                 if (event.target == helpModal) {
@@ -2385,6 +3011,20 @@
                 if (event.target == scoreSetModal) {
                     scoreSetModal.style.display = 'none';
                 }
+                if (event.target == exportModal) { 
+                    exportModal.style.display = 'none';
+                }
+                if (event.target == loadModal) { // Close load modal if clicked outside
+                    loadModal.style.display = 'none';
+                }
+                if (event.target == messageBox) { // Close message box if clicked outside
+                    messageBox.style.display = 'none';
+                }
+            });
+
+            // Print assessment results
+            printBtn.addEventListener('click', () => {
+                window.print();
             });
 
             // Initial update of progress bar and button state
