@@ -67,17 +67,12 @@
         .score-btn[data-score="3"]:hover { background-color: #ecfccb; color: #65a30d; } /* lime-100 */
         .score-btn[data-score="4"]:hover { background-color: #d1fae5; color: #047857; } /* green-100 */
 
-        /* Selected styles, matching maturityColors */
+        /* Selected styles: color, transform, and box-shadow. Background and border color will be set by JS. */
         .score-btn.selected {
             color: white; /* White text for selected buttons */
             transform: scale(1.1); /* Slightly enlarge selected button */
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        /* Specific selected colors will be set dynamically by JS based on maturityColors */
-        /* For initial render if needed, using a placeholder green */
-        .score-btn.selected {
-            background-color: #10B981; /* green-500 placeholder */
-            border-color: #059669; /* green-600 placeholder */
+            /* REMOVED: background-color and border-color from here to allow JS to control them dynamically */
         }
 
         /* Table styles */
@@ -2148,17 +2143,7 @@
             </div>
         </div>
 
-        <!-- New input field for Inn Name -->
-        <div class="mt-8 mb-4">
-            <label for="innNameInput" class="block text-lg font-semibold text-gray-700 mb-2">請輸入民宿名稱：</label>
-            <input type="text" id="innNameInput" value="民宿" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-        </div>
-
-        <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-            <button id="calculateBtn" class="bg-green-700 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-green-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
-                計算結果
-            </button>
-        </div>
+        <!-- The duplicate calculateBtn div has been removed from here -->
 
         <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
             <button id="printBtn" class="bg-green-700 text-white px-8 py-3 rounded-lg text-xl font-bold hover:bg-green-600 transition duration-300 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed">
@@ -2336,7 +2321,7 @@
             const categoryKeys = Object.keys(categories);
 
             // Store selected scores for each indicator: { 'A-1': { action: score, actionDuration: score, record: score, recordDuration: score }, ... }
-            const selectedScores = {}; // This object will store the scores for each indicator
+            const selectedScores = {}; // This object will store the scores for the four sub-scores of each indicator
 
             // Initialize selectedScores with undefined for all expected indicators and score types
             function initializeScores() {
@@ -2368,7 +2353,7 @@
 
             // Mapping for score button selected colors
             const scoreButtonSelectedColors = {
-                0: '#EF4444', // Red-500 for 0 (Not really a level, but for visual consistency)
+                0: '#EF4444', // Red-500 for 0
                 1: '#F2994A', // Orange for 基礎
                 2: '#F2C94C', // Yellow for 發展
                 3: '#A3CC5F', // Light Green for 整合
@@ -2392,6 +2377,8 @@
                 'O': 3,
                 'P': 4
             };
+            // Get all valid characters for validation
+            const validChars = Object.keys(charToScoreMap);
 
 
             // Function to get maturity level description based on average score
@@ -2470,42 +2457,40 @@
 
             // Function to visually update score buttons based on selectedScores
             function updateScoreButtonsUI() {
+                console.log("Starting updateScoreButtonsUI.");
                 scoreButtons.forEach(button => {
-                    button.classList.remove('selected');
-                    button.style.backgroundColor = '#f3f4f6'; // gray-100
-                    button.style.borderColor = '#d1d5db'; // gray-300
-                });
-
-                for (const categoryKey in categories) {
-                    for (let i = 1; i <= categories[categoryKey].indicators; i++) {
-                        const indicatorId = `${categoryKey}-${i}`;
-                        const scores = selectedScores[indicatorId];
-                        
-                        if (scores) {
-                            // Find the container for this indicator
-                            const indicatorContainer = document.querySelector(`[data-indicator="${indicatorId}"]`);
-                            if (indicatorContainer) {
-                                // Iterate through each score type for this indicator
-                                const scoreTypes = ['action', 'actionDuration', 'record', 'recordDuration'];
-                                scoreTypes.forEach(type => {
-                                    if (scores[type] !== undefined) {
-                                        const scoreValue = scores[type];
-                                        const scoreTypeDiv = indicatorContainer.querySelector(`[data-type="${type}"]`);
-                                        if (scoreTypeDiv) {
-                                            const selectedButton = scoreTypeDiv.querySelector(`button[data-score="${scoreValue}"]`);
-                                            if (selectedButton) {
-                                                selectedButton.classList.add('selected');
-                                                selectedButton.style.backgroundColor = scoreButtonSelectedColors[scoreValue];
-                                                selectedButton.style.borderColor = scoreButtonSelectedColors[scoreValue];
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                        }
+                    const parentDiv = button.closest('[data-indicator][data-type]');
+                    if (!parentDiv) {
+                        console.warn("Skipping button, parentDiv not found:", button);
+                        return;
                     }
-                }
-                updateProgress();
+                    const indicatorId = parentDiv.dataset.indicator;
+                    const scoreType = parentDiv.dataset.type;
+                    const buttonScore = parseInt(button.dataset.score);
+
+                    // Check if selectedScores for this indicator and type exist
+                    if (selectedScores[indicatorId] && selectedScores[indicatorId][scoreType] !== undefined) {
+                        const storedScore = selectedScores[indicatorId][scoreType];
+                        
+                        if (buttonScore === storedScore) {
+                            button.classList.add('selected');
+                            button.style.backgroundColor = scoreButtonSelectedColors[storedScore];
+                            button.style.borderColor = scoreButtonSelectedColors[storedScore];
+                            console.log(`  Selected button for ${indicatorId} - ${scoreType} with score ${storedScore}`);
+                        } else {
+                            button.classList.remove('selected');
+                            button.style.backgroundColor = '#f3f4f6'; // gray-100 as default background
+                            button.style.borderColor = '#d1d5db'; // gray-300 border
+                        }
+                    } else {
+                        // If no score is selected for this type, ensure the button is unselected
+                        button.classList.remove('selected');
+                        button.style.backgroundColor = '#f3f4f6'; // gray-100 as default background
+                        button.style.borderColor = '#d1d5db'; // gray-300 border
+                    }
+                });
+                console.log("Finished updateScoreButtonsUI. Updating progress and hiding results section.");
+                updateProgress(); // Update progress after UI changes
                 resultsSection.classList.add('hidden'); // Hide results when scores are changed
             }
 
@@ -2553,46 +2538,21 @@
                     // Close the modal after setting scores
                     scoreSetModal.style.display = 'none';
 
-                    // Clear all previous selections visually and reset their colors
-                    scoreButtons.forEach(btn => {
-                        btn.classList.remove('selected');
-                        btn.style.backgroundColor = '#f3f4f6'; // gray-100
-                        btn.style.borderColor = '#d1d5db'; // gray-300
-                    });
-
-                    // Set all indicator scores and update their visual state
+                    // Update selectedScores
                     for (const categoryKey in categories) {
                         for (let i = 1; i <= categories[categoryKey].indicators; i++) {
                             const indicatorId = `${categoryKey}-${i}`;
-                            // Set all four score types for the current indicator
                             selectedScores[indicatorId] = { 
                                 action: scoreToSet, 
                                 actionDuration: scoreToSet, 
                                 record: scoreToSet, 
                                 recordDuration: scoreToSet 
                             };
-
-                            // Visually update the buttons for this indicator
-                            // Select buttons for all four types within this indicator group
-                            const actionDiv = document.querySelector(`[data-indicator="${indicatorId}"][data-type="action"]`);
-                            const actionDurationDiv = document.querySelector(`[data-indicator="${indicatorId}"][data-type="actionDuration"]`);
-                            const recordDiv = document.querySelector(`[data-indicator="${indicatorId}"][data-type="record"]`);
-                            const recordDurationDiv = document.querySelector(`[data-indicator="${indicatorId}"][data-type="recordDuration"]`);
-
-                            const scoreDivs = [actionDiv, actionDurationDiv, recordDiv, recordDurationDiv];
-
-                            scoreDivs.forEach(div => {
-                                if (div) {
-                                    const btn = div.querySelector(`button[data-score="${scoreToSet}"]`);
-                                    if (btn) {
-                                        btn.classList.add('selected');
-                                        btn.style.backgroundColor = scoreButtonSelectedColors[scoreToSet];
-                                        btn.style.borderColor = scoreButtonSelectedColors[scoreToSet];
-                                    }
-                                }
-                            });
                         }
                     }
+                    // Call updateScoreButtonsUI to refresh the display for all buttons
+                    updateScoreButtonsUI(); 
+
                     // Hide results when scores are changed
                     resultsSection.classList.add('hidden');
                     // Update progress bar and button state
@@ -2705,28 +2665,59 @@
             }
 
             // Function to decode the string and update selectedScores
+            // Returns true if successful, false otherwise.
             function decodeAndApplyScores(encodedString) {
                 // First, reset all scores
                 initializeScores();
+                console.log("Starting decodeAndApplyScores. Input string:", encodedString);
 
                 let charIndex = 0;
+                // Create a temporary object to hold decoded scores before applying to selectedScores
+                const tempDecodedScores = {};
+
                 for (const categoryKey of categoryKeys) {
                     for (let i = 1; i <= categories[categoryKey].indicators; i++) {
                         const indicatorId = `${categoryKey}-${i}`;
                         
+                        // Ensure there are enough characters for the current indicator
+                        if (charIndex + 4 > encodedString.length) {
+                            console.error("decodeAndApplyScores: Encoded string too short during decoding process for indicator:", indicatorId);
+                            return false; 
+                        }
+
                         const actionChar = encodedString[charIndex++];
                         const actionDurationChar = encodedString[charIndex++];
                         const recordChar = encodedString[charIndex++];
                         const recordDurationChar = encodedString[charIndex++];
 
-                        selectedScores[indicatorId].action = charToScoreMap[actionChar];
-                        selectedScores[indicatorId].actionDuration = charToScoreMap[actionDurationChar];
-                        selectedScores[indicatorId].record = charToScoreMap[recordChar];
-                        selectedScores[indicatorId].recordDuration = charToScoreMap[recordDurationChar];
+                        // Check if decoded characters are valid based on charToScoreMap
+                        if (charToScoreMap[actionChar] === undefined ||
+                            charToScoreMap[actionDurationChar] === undefined ||
+                            charToScoreMap[recordChar] === undefined ||
+                            charToScoreMap[recordDurationChar] === undefined) {
+                            
+                            console.error("decodeAndApplyScores: Invalid character found. Chars:", { actionChar, actionDurationChar, recordChar, recordDurationChar }, "at index", charIndex - 4);
+                            return false; 
+                        }
+
+                        // Store in temporary object first
+                        tempDecodedScores[indicatorId] = {
+                            action: charToScoreMap[actionChar],
+                            actionDuration: charToScoreMap[actionDurationChar],
+                            record: charToScoreMap[recordChar],
+                            recordDuration: charToScoreMap[recordDurationChar]
+                        };
+                        console.log(`  Decoded raw scores for ${indicatorId}:`, tempDecodedScores[indicatorId]);
                     }
                 }
-                // Update UI after decoding
-                updateScoreButtonsUI();
+
+                // If all characters were successfully processed and valid, apply them to the global selectedScores
+                Object.assign(selectedScores, tempDecodedScores);
+                console.log("decodeAndApplyScores: All scores successfully decoded and applied to selectedScores:", selectedScores);
+                
+                // Now, update the UI based on the newly loaded scores
+                updateScoreButtonsUI(); 
+                return true;
             }
 
             // Calculate Sustainable Maturity
@@ -2754,6 +2745,7 @@
                             categoryFinalScores[categoryKey].push(finalIndicatorScore);
                         } else {
                             // If any sub-score is missing for an indicator, treat its final score as 0 for calculation
+                            // This scenario should be rare if calculation button is disabled when not all indicators are completed.
                             categoryFinalScores[categoryKey].push(0); // Pushing 0 for incomplete indicators
                         }
                     }
@@ -2889,11 +2881,7 @@
                 initializeScores();
 
                 // Remove 'selected' class from all buttons and reset their colors
-                scoreButtons.forEach(button => {
-                    button.classList.remove('selected');
-                    button.style.backgroundColor = '#f3f4f6'; // gray-100
-                    button.style.borderColor = '#d1d5db'; // gray-300
-                });
+                updateScoreButtonsUI(); // Call this to visually reset all buttons
 
                 // Reset inn name input and display
                 innNameInput.value = '民宿';
@@ -2982,24 +2970,28 @@
 
                 // Validate string length
                 if (inputString.length !== expectedLength) {
-                    showMessageBox('讀取失敗', '讀取失敗'); // Simplified error message
+                    showMessageBox('讀取失敗', '評估編碼字串長度不正確。預期長度為 ' + expectedLength + ' 個字符。');
                     return;
                 }
 
-                // Validate characters
-                const validChars = Object.keys(charToScoreMap); // ['R', 'M', 'N', 'O', 'P']
+                // Validate characters in the string
                 for (let i = 0; i < inputString.length; i++) {
-                    const char = inputString[i];
-                    if (!validChars.includes(char)) {
-                        showMessageBox('讀取失敗', '讀取失敗'); // Simplified error message
+                    if (!validChars.includes(inputString[i])) {
+                        showMessageBox('讀取失敗', '評估編碼字串包含無效字符。');
                         return;
                     }
                 }
 
                 // If valid, decode and apply scores
-                decodeAndApplyScores(inputString);
-                loadModal.style.display = 'none'; // Close the load modal
-                showMessageBox('讀取成功', '評分已成功載入！');
+                const success = decodeAndApplyScores(inputString);
+                if (success) {
+                    loadModal.style.display = 'none'; // Close the load modal
+                    showMessageBox('讀取成功', '評分已成功載入！');
+                } else {
+                    // This else block acts as a fallback for internal validation issues in decodeAndApplyScores,
+                    // though initial checks should catch most issues.
+                    showMessageBox('讀取失敗', '解碼評估字串時發生錯誤。請檢查主控台訊息。');
+                }
             });
 
 
