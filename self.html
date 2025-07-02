@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>民宿永續旅遊成熟度評估</title>
+    <title>民宿永續旅遊成熟度自評工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js for Radar Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -338,14 +338,12 @@
     <!-- Navigation Bar (Fixed at top) -->
     <nav class="fixed top-0 left-0 right-0 z-50 bg-green-700 text-white shadow-lg w-full py-2">
         <div class="max-w-6xl mx-auto px-4 flex justify-between items-center w-full">
-            <h1 class="text-2xl font-bold">民宿永續旅遊成熟度評估</h1>
+            <h1 class="text-2xl font-bold">民宿永續旅遊成熟度自評工具</h1>
             <div class="flex space-x-4">
                 <button id="resetBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out">
-                    重設評估
+                    重設
                 </button>
-                <button id="helpBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out">
-                    使用說明
-                </button>
+                <!-- Removed Help Button as per user request -->
                 <button id="globalSetScoreBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out text-2xl">
                     &#128274; <!-- Unicode for lock emoji -->
                 </button>
@@ -354,8 +352,8 @@
     </nav>
 
     <div class="max-w-6xl w-full bg-white shadow-xl rounded-lg p-8 mt-10 mb-10"> <!-- Adjusted mt-10 for content clearance -->
-        <!-- Added id="introductionText" to this paragraph and made it bold -->
-        <p id="introductionText" class="text-lg text-gray-700 text-center mb-6 font-bold">評估人員對受評單位之回覆，就其行動與記錄，依設計之給分範圍 0 至 4 分，個別進行評分。</p>
+        <!-- Updated Introduction Text as per user request -->
+        <p id="introductionText" class="text-lg text-gray-700 text-center mb-6 font-bold">請您就民宿的實際情況，在每項指標的行動與記錄中，選擇最適合的描述。</p>
 
         <!-- New input field for Inn Name - MOVED HERE AND STYLED AS A CARD -->
         <!-- Background changed to bg-green-50 -->
@@ -1405,7 +1403,7 @@
 
         <div id="resultsSection" class="mt-12 p-8 bg-green-50 rounded-lg shadow-lg hidden">
             <!-- Print Title (Hidden by default, shown only on print) -->
-            <h1 id="printTitle" class="hidden">民宿永續旅遊成熟度評估</h1>
+            <h1 id="printTitle" class="hidden">民宿永續旅遊成熟度自評工具</h1>
 
             <!-- Displayed Inn Name -->
             <h2 id="displayedInnName" class="text-4xl font-bold text-center text-green-800 mb-4"></h2>
@@ -1482,15 +1480,7 @@
                 <div class="w-full bg-gray-400 rounded-full h-2">
                     <div id="progressBar" class="bg-green-500 h-2 rounded-full progress-bar" style="width: 0%;"></div>
                 </div>
-                <!-- Quick Guide Section -->
-                <div class="w-full mt-4 text-white text-xs flex justify-between flex-wrap">
-                    <div class="flex items-center mb-1 sm:mb-0">
-                        <span class="font-semibold mr-1">行動/記錄:</span>
-                        <span>0 尚未開始</span>
-                        <span class="mx-1">&harr;</span>
-                        <span>4 完全達成</span>
-                    </div>
-                </div>
+                <!-- Removed Quick Guide Section as per user request -->
             </div>
             
             <!-- Right Column: Buttons -->
@@ -1686,7 +1676,7 @@
             const downloadResultBtn = document.getElementById('downloadResultBtn'); // Renamed from printBtn
 
             const resetBtn = document.getElementById('resetBtn');
-            const helpBtn = document.getElementById('helpBtn');
+            // const helpBtn = document.getElementById('helpBtn'); // Removed as per user request
             const globalSetScoreBtn = document.getElementById('globalSetScoreBtn');
             const resultsSection = document.getElementById('resultsSection');
             const overallMaturityLevel = document.getElementById('overallMaturityLevel');
@@ -2244,9 +2234,9 @@
             });
 
             // Help button and Modal
-            helpBtn.addEventListener('click', () => {
-                helpModal.style.display = 'flex'; // Show the modal
-            });
+            // helpBtn.addEventListener('click', () => { // Removed as per user request
+            //     helpModal.style.display = 'flex'; // Show the modal
+            // });
 
             closeHelpModalBtn.addEventListener('click', () => {
                 helpModal.style.display = 'none'; // Hide the modal
