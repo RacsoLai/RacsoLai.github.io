@@ -2085,8 +2085,9 @@
                 <div class="w-full md:flex-1">
                     <div class="text-center mb-6">
                         <div class="text-lg font-medium text-gray-600 mb-2">總體成熟度等級</div>
+                        <!-- MODIFIED: Removed parentheses and added percentage display -->
                         <div class="text-4xl font-bold text-green-700">
-                            <span id="overallMaturityLevel"></span> (<span id="overallMaturityScore"></span>分)
+                            <span id="overallMaturityLevel"></span> <span id="overallMaturityScore"></span> (<span id="overallMaturityPercentage"></span>%)
                         </div>
                         <div id="overallMaturityDescription" class="mt-2 text-center text-gray-700"></div>
                     </div>
@@ -2403,6 +2404,7 @@
             const resultsSection = document.getElementById('resultsSection');
             const overallMaturityLevel = document.getElementById('overallMaturityLevel');
             const overallMaturityScore = document.getElementById('overallMaturityScore'); 
+            const overallMaturityPercentage = document.getElementById('overallMaturityPercentage'); // NEW: For percentage display
             const overallMaturityDescription = document.getElementById('overallMaturityDescription');
             const overallMaturityBar = document.getElementById('overallMaturityBar');
             
@@ -2695,7 +2697,8 @@
                                             label += ': ';
                                         }
                                         if (context.parsed.r !== null) {
-                                            label += context.parsed.r.toFixed(2) + '分';
+                                            // MODIFIED: Removed "分"
+                                            label += context.parsed.r.toFixed(2);
                                         }
                                         return label;
                                     }
@@ -2879,9 +2882,14 @@
                 // Determine maturity levels
                 const overallInfo = getMaturityInfo(overallAvg);
 
+                // Calculate percentage for overall maturity
+                const overallPercentage = ((overallAvg / 4) * 100).toFixed(0); // Rounded to nearest whole number
+
                 // Update Overall Maturity Display
                 overallMaturityLevel.textContent = overallInfo.level;
-                overallMaturityScore.textContent = overallAvg.toFixed(2); // Display overall score
+                // MODIFIED: Removed "分" from overallMaturityScore
+                overallMaturityScore.textContent = overallAvg.toFixed(2); 
+                overallMaturityPercentage.textContent = overallPercentage; // Display percentage
                 overallMaturityDescription.innerHTML = overallInfo.description; // Use innerHTML to respect newlines
                 overallMaturityLevel.style.color = overallInfo.color; // Set color for overall level text
                 overallMaturityBar.style.backgroundColor = overallInfo.color; // Set color for overall progress bar
@@ -2912,7 +2920,8 @@
                     const scoreCell = document.createElement('td');
                     scoreCell.classList.add('p-3', 'border', 'text-gray-700');
                     scoreCell.style.width = '20%'; // Set width
-                    scoreCell.innerHTML = `<span class="font-bold" style="color: ${info.color}">${info.level}</span> (${avg.toFixed(2)}分)`;
+                    // MODIFIED: Removed "分" from category average score display
+                    scoreCell.innerHTML = `<span class="font-bold" style="color: ${info.color}">${info.level}</span> (${avg.toFixed(2)})`;
                     row.appendChild(scoreCell);
 
                     // 表現 (Performance Bar) Cell
@@ -3013,6 +3022,7 @@
                 // Clear overall maturity display
                 overallMaturityLevel.textContent = '';
                 overallMaturityScore.textContent = ''; // Clear overall score
+                overallMaturityPercentage.textContent = ''; // Clear percentage
                 overallMaturityDescription.textContent = '';
                 overallMaturityBar.style.width = '0%';
                 overallMaturityBar.style.backgroundColor = ''; // Clear custom color
