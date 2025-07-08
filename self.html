@@ -313,6 +313,10 @@
                 <button id="globalSetScoreBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out text-2xl">
                     &#128274; <!-- Unicode for lock emoji -->
                 </button>
+                <!-- Help Button - Re-added -->
+                <button id="helpBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition duration-150 ease-in-out">
+                    使用說明
+                </button>
             </div>
         </div>
     </nav>
@@ -1469,29 +1473,11 @@
     <div id="helpModal" class="modal">
         <div class="modal-content">
             <span class="close-button" id="closeHelpModalBtn">&times;</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">使用說明</h2>
-            <p class="text-gray-700 mb-4">歡迎使用民宿永續旅遊成熟度評估工具！</p>
-            <p class="text-gray-700 mb-4">評估人員對受評單位之回覆，就其行動與記錄，依設計之給分範圍 0 至 4 分，個別進行評分。</p>
-            
-            <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">行動完整性：民宿執行該項指標之相關行動之達成程度。</h3>
-            <ul class="list-disc list-inside text-gray-700 mb-4 pl-4">
-                <li>0分 尚未開始：尚未執行任何行動</li>
-                <li>1分 低度達成：已依營運需求或政策要求，執行一項或多項行動</li>
-                <li>2分 中度達成：已依營運需求或政策要求，經評估後執行多項行動</li>
-                <li>3分 高度達成：已對各可行之方法進行評估且將利害關係人意見納入，執行部分行動</li>
-                <li>4分 充份達成：已盡可能評估並考量各利害關係人的意見，執行所有可行之行動</li>
-            </ul>
-            <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">記錄及文件完整性：民宿針對該項指標進行系統化記錄的程度。</h3>
-            <ul class="list-disc list-inside text-gray-700 mb-4 pl-4">
-                <li>0分 尚未開始：尚未有進行記錄</li>
-                <li>1分 低度達成：整理紙本文件並輔以手寫文字進行記錄</li>
-                <li>2分 中度達成：已運用電子化方式進行文字與照片之記錄 (如LINE)</li>
-                <li>3分 高度達成：除運用電子化方式進行記錄，亦運用試算表工具進行彙整</li>
-                <li>4分 充份達成：已導入企業資源規劃(ERP) 進行記錄及彙整</li>
-            </ul>
-            <p class="text-gray-700 mb-4">每個指標的最終分數將取「行動」及「記錄」兩項分數的最小值。</p>
-            <p class="text-gray-700 mb-4">完成所有指標評估後，點擊「計算結果」按鈕，即可查看您的民宿在各面向和總體上的永續成熟度等級。</p>
-            <p class="text-gray-700 mb-4">您也可以隨時點擊「重設評估」按鈕，重新開始評估。</p>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">使用說明</h2>
+            <div class="flex flex-col items-center space-y-6">
+                <img src="https://github.com/RacsoLai/RacsoLai.github.io/blob/main/action.png?raw=true" alt="行動完整性說明" class="max-w-full h-auto rounded-lg shadow-md">
+                <img src="https://github.com/RacsoLai/RacsoLai.github.io/blob/main/record.png?raw=true" alt="記錄及文件完整性說明" class="max-w-full h-auto rounded-lg shadow-md">
+            </div>
         </div>
     </div>
 
@@ -1646,7 +1632,7 @@
             const downloadResultBtn = document.getElementById('downloadResultBtn'); // Renamed from printBtn
 
             const resetBtn = document.getElementById('resetBtn');
-            // const helpBtn = document.getElementById('helpBtn'); // Removed as per user request
+            const helpBtn = document.getElementById('helpBtn'); // Re-added
             const globalSetScoreBtn = document.getElementById('globalSetScoreBtn');
             const resultsSection = document.getElementById('resultsSection');
             const overallMaturityLevel = document.getElementById('overallMaturityLevel');
@@ -2226,9 +2212,9 @@
             });
 
             // Help button and Modal
-            // helpBtn.addEventListener('click', () => { // Removed as per user request
-            //     helpModal.style.display = 'flex'; // Show the modal
-            // });
+            helpBtn.addEventListener('click', () => { // Re-added helpBtn listener
+                helpModal.style.display = 'flex'; // Show the modal
+            });
 
             closeHelpModalBtn.addEventListener('click', () => {
                 helpModal.style.display = 'none'; // Hide the modal
